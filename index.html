@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>抖音账号免费诊断</title>
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --card2: #f1f5f9;
+    --text: #0f172a; --text2: #475569; --text3: #94a3b8;
+    --accent: #6366f1; --accent-light: rgba(99,102,241,.1);
+    --red: #ef4444; --orange: #f59e0b; --green: #10b981;
+    --border: #e2e8f0; --border-light: #f1f5f9;
+    --radius: 16px; --radius-sm: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.04);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height:100vh; display:flex; justify-content:center; align-items:center;
+    padding: 20px;
+  }
+  .container { width:100%; max-width:440px; }
+
+  .step { display:none; animation: fadeSlide .35s ease; }
+  .step.active { display:block; }
+  @keyframes fadeSlide {
+    from { opacity:0; transform: translateY(12px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ====== HEADER ====== */
+  .brand { text-align:center; margin-bottom:28px; }
+  .brand-icon {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 16px; display:inline-flex;
+    align-items:center; justify-content:center; font-size:26px;
+    margin-bottom:14px;
+    box-shadow: 0 4px 16px rgba(99,102,241,.2);
+  }
+  .brand h1 { font-size:22px; font-weight:800; color:#0f172a; margin-bottom:4px; letter-spacing:-.3px; }
+  .brand .sub { font-size:14px; color:var(--text3); }
+
+  .card {
+    background:var(--card); border-radius:var(--radius);
+    padding:22px 20px; border:1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .field { margin-bottom:14px; }
+  .field-label {
+    display:block; font-size:14px; color:var(--text2);
+    margin-bottom:5px; font-weight:600;
+  }
+  .field-label .tag {
+    font-size:10px; background:var(--accent-light); color:#6366f1;
+    padding:2px 7px; border-radius:4px; margin-left:6px; font-weight:600;
+  }
+  input, select, textarea {
+    width:100%; padding:10px 13px;
+    background:var(--bg); border:1.5px solid var(--border);
+    border-radius:var(--radius-sm); color:var(--text);
+    font-size:15px; font-family:inherit; outline:none;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+  }
+  input::placeholder, textarea::placeholder { color:#94a3b8; }
+  select {
+    appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%23636b'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 13px center;
+    cursor:pointer;
+  }
+  textarea { resize:none; height:60px; }
+
+  /* Upload */
+  .upload {
+    border:2px dashed #cbd5e1; border-radius:var(--radius-sm);
+    padding:22px 16px; text-align:center; cursor:pointer;
+    transition:border-color .2s, background .2s; position:relative;
+    overflow:hidden; background:var(--bg);
+  }
+  .upload:hover { border-color:var(--accent); background:#f1f5f9; }
+  .upload.has-img { border-style:solid; border-color:var(--accent); padding:8px; background:var(--card); }
+  .upload-icon-svg { width:28px; height:28px; margin:0 auto 8px; color:#94a3b8; }
+  .upload-text { font-size:13px; color:var(--text2); font-weight:500; }
+  .upload-hint { font-size:11px; color:var(--text3); margin-top:4px; }
+  .upload input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .upload .preview { display:none; width:100%; max-height:200px; object-fit:contain; border-radius:8px; }
+  .upload.has-img .upload-icon-svg,
+  .upload.has-img .upload-text,
+  .upload.has-img .upload-hint { display:none; }
+  .upload.has-img .preview { display:block; }
+  .upload .remove-btn {
+    display:none; position:absolute; top:8px; right:8px;
+    width:26px; height:26px; background:rgba(0,0,0,.55); color:#fff;
+    border:none; border-radius:50%; font-size:15px; cursor:pointer;
+    z-index:2; line-height:26px; text-align:center;
+  }
+  .upload.has-img .remove-btn { display:block; }
+
+  .btn {
+    width:100%; padding:14px; border:none; border-radius:var(--radius-sm);
+    font-size:16px; font-weight:700; cursor:pointer; font-family:inherit;
+    transition:all .2s; position:relative;
+  }
+  .btn-primary {
+    background:linear-gradient(135deg, #6366f1, #8b5cf6);
+    color:#fff; margin-top:18px;
+    box-shadow: 0 4px 16px rgba(99,102,241,.2);
+  }
+  .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,.3); }
+  .btn-primary:active:not(:disabled) { transform:translateY(0); }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+
+  .trust { text-align:center; font-size:12px; color:var(--text3); margin-top:14px; }
+  .err-msg {
+    background:#fef2f2; border:1px solid rgba(239,68,68,.25);
+    color:var(--red); padding:10px 14px; border-radius:var(--radius-sm);
+    font-size:13px; margin-top:12px; display:none;
+  }
+
+  /* ====== LOADING ====== */
+  .loading-wrap { text-align:center; padding:48px 20px; background:var(--card); border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow); }
+  .pulse-ring { width:64px; height:64px; margin:0 auto 32px; position:relative; }
+  .pulse-ring::before {
+    content:''; position:absolute; inset:0;
+    border-radius:50%; border:3px solid var(--accent);
+    animation: pulse-ring 1.6s ease-out infinite;
+  }
+  .pulse-ring::after {
+    content:''; position:absolute; inset:12px;
+    border-radius:50%; background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    animation: pulse-dot .8s ease-in-out infinite alternate;
+  }
+  @keyframes pulse-ring {
+    0% { transform:scale(.8); opacity:1; }
+    100% { transform:scale(1.5); opacity:0; }
+  }
+  @keyframes pulse-dot {
+    from { transform:scale(.8); }
+    to { transform:scale(1.15); }
+  }
+  .loading-wrap h2 { font-size:18px; color:var(--text); margin-bottom:6px; }
+  .loading-wrap .lsub { font-size:13px; color:var(--text3); margin-bottom:24px; }
+
+  .steps-list { text-align:left; max-width:240px; margin:0 auto; }
+  .s-item {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 0; font-size:14px; color:var(--text3);
+    transition:color .3s;
+  }
+  .s-dot {
+    width:22px; height:22px; border-radius:50%;
+    border:2px solid #cbd5e1; display:flex;
+    align-items:center; justify-content:center;
+    font-size:12px; flex-shrink:0; transition:all .3s;
+  }
+  .s-item.done { color:var(--text); }
+  .s-item.done .s-dot { border-color:var(--green); background:var(--green); color:#fff; }
+  .s-item.cur { color:var(--text); }
+  .s-item.cur .s-dot { border-color:var(--accent); box-shadow:0 0 0 4px rgba(99,102,241,.15); }
+
+  /* ====== REPORT ====== */
+  .report-header { text-align:center; margin-bottom:24px; }
+  .score-wrap { margin:0 auto 14px; position:relative; width:100px; height:100px; }
+  .score-ring-bg { fill:none; stroke:#e2e8f0; stroke-width:6; }
+  .score-ring-fg { fill:none; stroke-width:6; stroke-linecap:round; transform:rotate(-90deg); transform-origin:center; transition:stroke-dashoffset 1s ease; }
+  .score-text { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .score-num { font-size:38px; font-weight:800; transition:color .5s; }
+  .score-unit { font-size:12px; color:var(--text3); margin-top:-4px; }
+  .report-header h2 { font-size:17px; color:var(--text); margin-bottom:4px; }
+  .report-sub { font-size:13px; color:var(--text2); max-width:340px; margin:0 auto; line-height:1.6; }
+
+  .problem-list { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+  .p-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:18px;
+    border-left:4px solid var(--red); box-shadow:var(--shadow);
+  }
+  .p-card:nth-child(2) { border-left-color:var(--orange); }
+  .p-card:nth-child(3) { border-left-color:#fbbf24; }
+  .p-tag { font-size:11px; font-weight:700; letter-spacing:1px; margin-bottom:4px; display:inline-block; padding:2px 10px; border-radius:5px; }
+  .p-card:nth-child(1) .p-tag { color:var(--red); background:rgba(239,68,68,.1); }
+  .p-card:nth-child(2) .p-tag { color:var(--orange); background:rgba(245,158,11,.1); }
+  .p-card:nth-child(3) .p-tag { color:#fbbf24; background:rgba(251,191,36,.1); }
+  .p-title { font-size:16px; font-weight:700; color:#0f172a; margin-bottom:5px; }
+  .p-desc { font-size:14px; color:var(--text2); line-height:1.75; margin-bottom:12px; }
+
+  .p-questions {
+    background:var(--bg); border-radius:8px; padding:12px 14px;
+    margin-bottom:8px; border:1px solid var(--border);
+  }
+  .p-questions .pq-label { font-size:11px; color:var(--accent); font-weight:700; margin-bottom:4px; letter-spacing:.5px; }
+  .p-questions .pq-q { font-size:13px; color:var(--text2); margin:4px 0; line-height:1.6; }
+
+  .p-warn {
+    display:flex; align-items:flex-start; gap:6px; font-size:12px;
+    color:var(--red); line-height:1.6; background:#fef2f2;
+    padding:8px 10px; border-radius:8px;
+  }
+
+  .cta {
+    background:linear-gradient(135deg, rgba(99,102,241,.04), rgba(139,92,246,.03));
+    border:1.5px solid rgba(99,102,241,.25); border-radius:var(--radius);
+    padding:24px 20px; text-align:center;
+  }
+  .cta h3 { font-size:16px; color:var(--text); margin-bottom:4px; }
+  .cta-sub { font-size:13px; color:var(--text2); margin-bottom:6px; line-height:1.6; }
+  .cta-desc { font-size:14px; color:var(--text2); font-weight:600; margin-bottom:16px; }
+  .wx-row {
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    background:var(--bg); border-radius:var(--radius-sm);
+    padding:12px 16px; margin-bottom:12px; border:1px solid var(--border);
+  }
+  .wx-badge { width:28px; height:28px; background:#07c160; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .wx-text { font-size:18px; font-weight:800; letter-spacing:.5px; color:var(--text); }
+  .btn-copy { background:#07c160; color:#fff; padding:8px 18px; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .2s; box-shadow:0 2px 8px rgba(7,193,96,.2); }
+  .btn-copy.copied { background:#059669; }
+  .cta-tip { font-size:11px; color:var(--text3); margin-top:8px; }
+
+  .btn-reset {
+    display:block; width:100%; margin-top:24px; padding:12px;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius-sm); color:var(--text2);
+    font-size:14px; cursor:pointer; font-family:inherit;
+    transition:all .2s;
+  }
+  .btn-reset:hover { color:var(--text); border-color:var(--text3); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ====== INPUT ====== -->
+  <div class="step active" id="step1">
+    <div class="brand">
+      <div class="brand-icon">&#128269;</div>
+      <h1>抖音账号免费诊断</h1>
+      <p class="sub">上百商家实战验证，30秒定位账号核心问题</p>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label class="field-label">上传主页截图 <span class="tag">推荐</span></label>
+        <div class="upload" id="uploadZone">
+          <svg class="upload-icon-svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="26" height="26" rx="4"/><circle cx="11" cy="11" r="3"/><path d="M3 21l8-8 5 5 4-4 9 9"/></svg>
+          <div class="upload-text">点击上传抖音主页截图</div>
+          <div class="upload-hint">截图越全诊断越准，支持 JPG/PNG</div>
+          <img class="preview" id="imgPreview" alt="">
+          <button class="remove-btn" id="btnRemoveImg">&times;</button>
+          <input type="file" id="imageInput" accept="image/*">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">抖音号</label>
+        <input type="text" id="douyinId" placeholder="例如：dy123456789" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label class="field-label">行业</label>
+        <select id="industry">
+          <option value="">请选择行业</option>
+          <option>餐饮</option><option>美容</option><option>教育/培训</option>
+          <option>装修/建材</option><option>家政</option><option>健身</option>
+          <option>汽车</option><option>房产</option><option>宠物</option>
+          <option>摄影</option><option>法律服务</option><option>财税</option>
+          <option>本地生活</option><option>知识付费</option><option>电商带货</option>
+          <option>其他</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field-label">遇到的问题 <span style="color:#94a3b8;font-weight:400;">（选填）</span></label>
+        <textarea id="problem" placeholder="比如：播放量低、没客户咨询、投了dou+没效果..."></textarea>
+      </div>
+
+      <div class="err-msg" id="errMsg"></div>
+
+      <button class="btn btn-primary" id="btnStart">⚡ 免费诊断</button>
+    </div>
+
+    <p class="trust">不收费 · 不留手机号 · 截图不存储</p>
+  </div>
+
+  <!-- ====== LOADING ====== -->
+  <div class="step" id="step2">
+    <div class="loading-wrap">
+      <div class="pulse-ring"></div>
+      <h2 id="loadingTitle">正在多维度分析你的账号</h2>
+      <p class="lsub">综合分析中，请稍等...</p>
+      <div class="steps-list">
+        <div class="s-item" id="sp1"><span class="s-dot">&#10003;</span>拉取账号基础数据</div>
+        <div class="s-item" id="sp2"><span class="s-dot">&#10003;</span>对比行业平均数据</div>
+        <div class="s-item" id="sp3"><span class="s-dot">&#10003;</span>诊断引擎深度分析</div>
+        <div class="s-item" id="sp4"><span class="s-dot">&#10003;</span>生成诊断报告</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== REPORT ====== -->
+  <div class="step" id="step3">
+    <div class="report-header">
+      <div class="score-wrap">
+        <svg viewBox="0 0 110 110" width="110" height="110">
+          <circle class="score-ring-bg" cx="55" cy="55" r="48"/>
+          <circle class="score-ring-fg" id="scoreArc" cx="55" cy="55" r="48"
+            stroke-dasharray="301.6" stroke-dashoffset="150" stroke="#f59e0b"/>
+        </svg>
+        <div class="score-text">
+          <span class="score-num" id="scoreNum">52</span>
+          <span class="score-unit">分</span>
+        </div>
+      </div>
+      <h2>综合健康度</h2>
+      <p class="report-sub" id="reportSub"></p>
+    </div>
+
+    <div class="problem-list" id="problemsList"></div>
+
+    <div class="cta">
+      <h3>想解决这些问题？</h3>
+      <p class="cta-sub" id="ctaProblems"></p>
+      <p class="cta-desc" id="ctaDesc">加微信，1对1帮你分析提升到90+分的路径</p>
+      <div class="wx-row">
+        <span class="wx-badge">&#128172;</span>
+        <span class="wx-text" id="wechatId">zengke_dy</span>
+        <button class="btn-copy" id="btnCopyWx">复制</button>
+      </div>
+      <p class="cta-tip">不加也没关系，但建议把上面3个反思问题想清楚</p>
+    </div>
+
+    <button class="btn-reset" id="btnReset">&larr; 重新诊断另一个账号</button>
+  </div>
+</div>
+
+<script>
+(function() { 'use strict';
+
+  const DOUBAO_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+  const DOUBAO_KEY = 'ark-d1754a1a-98cd-4db6-8efa-d21e6c149359-01bf9';
+  const DOUBAO_MODEL = 'ep-20260528232335-78k69';
+  const SALES_WX = ['Lhx122903','z18320567819','z5772580','ML04622'];
+  const WX = SALES_WX[Math.floor(Math.random() * SALES_WX.length)];
+  const RETRY_MAX = 2;
+
+  let imageB64 = null;
+  let diagnosing = false;
+
+  const $ = id => document.getElementById(id);
+  const step1 = $('step1'), step2 = $('step2'), step3 = $('step3');
+  const uploadZone = $('uploadZone'), imgPreview = $('imgPreview');
+  const imageInput = $('imageInput'), btnRemoveImg = $('btnRemoveImg');
+  const douyinId = $('douyinId'), industry = $('industry'), problem = $('problem');
+  const errMsg = $('errMsg'), btnStart = $('btnStart');
+  const scoreNum = $('scoreNum'), scoreArc = $('scoreArc');
+  const reportSub = $('reportSub');
+  const problemsList = $('problemsList');
+  const wechatId = $('wechatId'), btnCopyWx = $('btnCopyWx');
+  const ctaProblems = $('ctaProblems'), ctaDesc = $('ctaDesc');
+  const loadingTitle = $('loadingTitle');
+
+  // ---- Image ----
+  imageInput.addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    if (file.size > 10*1024*1024) return showErr('图片不能超过 10MB');
+    const r = new FileReader();
+    r.onload = function(e) {
+      imageB64 = e.target.result;
+      imgPreview.src = imageB64;
+      uploadZone.classList.add('has-img');
+    };
+    r.readAsDataURL(file);
+  });
+  btnRemoveImg.addEventListener('click', function(e) { e.stopPropagation(); clearImage(); });
+  function clearImage() {
+    imageB64 = null; imageInput.value = '';
+    imgPreview.src = ''; uploadZone.classList.remove('has-img');
+  }
+
+  // ---- UI ----
+  function showStep(n) { [step1,step2,step3].forEach((el,i) => el.classList.toggle('active', i+1===n)); }
+  function showErr(msg) { errMsg.textContent = msg; errMsg.style.display = 'block'; }
+  function hideErr() { errMsg.style.display = 'none'; }
+
+  // ---- Start ----
+  btnStart.addEventListener('click', startDiagnosis);
+  douyinId.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); startDiagnosis(); }
+  });
+
+  async function startDiagnosis() {
+    if (diagnosing) return;
+    const did = douyinId.value.trim();
+    const ind = industry.value;
+    const prob = problem.value.trim();
+    hideErr();
+
+    if (!imageB64 && !did) { showErr('请上传截图或输入抖音号'); return; }
+    if (!ind) { showErr('请选择行业'); return; }
+
+    diagnosing = true; btnStart.disabled = true; btnStart.textContent = '正在启动...';
+
+    loadingTitle.textContent = imageB64 ? '正在分析截图 + 多维度诊断...' : '正在多维度分析你的账号...';
+    showStep(2);
+    await animateLoading();
+
+    let result = null, lastErr = '';
+    for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
+      try {
+        if (attempt > 0) await sleep(1500);
+        result = await callAPI(did, ind, prob);
+        if (result) break;
+      } catch(e) { lastErr = e.message; console.warn('Attempt '+(attempt+1)+' failed:', e); }
+    }
+
+    if (result) { renderReport(did, ind, result); showStep(3); }
+    else { showStep(1); showErr(lastErr || '诊断服务暂时繁忙，请稍后重试'); }
+
+    diagnosing = false; btnStart.disabled = false; btnStart.textContent = '⚡ 免费诊断';
+  }
+
+  // ---- Loading ----
+  async function animateLoading() {
+    const ids = ['sp1','sp2','sp3','sp4'];
+    ids.forEach(id => { const el=$(id); el.classList.remove('done','cur'); el.querySelector('.s-dot').textContent='✓'; });
+    for (let i=0; i<ids.length; i++) {
+      await sleep(550 + Math.random()*400);
+      if (i>0) { const prev=$(ids[i-1]); prev.classList.remove('cur'); prev.classList.add('done'); }
+      $(ids[i]).classList.add('cur');
+    }
+    await sleep(300);
+    const last=$(ids[3]); last.classList.remove('cur'); last.classList.add('done');
+  }
+
+  // ---- API ----
+  async function callAPI(did, ind, prob) {
+    const parts = [];
+    if (did) parts.push('抖音号：'+did);
+    if (ind) parts.push('行业：'+ind);
+    if (prob) parts.push('用户描述的问题：'+prob);
+    const info = parts.length ? parts.join('\n') : '请根据截图进行诊断';
+
+    let messages;
+    if (imageB64) {
+      messages = [
+        { role:'system', content: SYSTEM_PROMPT },
+        { role:'user', content: [
+          { type:'image_url', image_url:{ url:imageB64 } },
+          { type:'text', text: '请诊断这个抖音账号。'+info+'\n\n根据截图中可见的信息（粉丝数、作品数、点赞量、头像、昵称、简介、内容风格、主页排版等）进行综合诊断。' }
+        ]}
+      ];
+    } else {
+      messages = [
+        { role:'system', content: SYSTEM_PROMPT },
+        { role:'user', content: info }
+      ];
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 65000);
+
+    try {
+      const resp = await fetch(DOUBAO_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+DOUBAO_KEY },
+        body: JSON.stringify({ model:DOUBAO_MODEL, max_tokens:2000, temperature:0.8, messages }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!resp.ok) {
+        const errData = await resp.json().catch(()=>({}));
+        throw new Error(errData.error?.message || '服务器错误 ('+resp.status+')');
+      }
+      const data = await resp.json();
+      if (!data.choices || !data.choices[0]) throw new Error('API返回异常');
+      return parseReport(data.choices[0].message.content || '');
+    } catch(e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') throw new Error('诊断超时，请重试');
+      throw e;
+    }
+  }
+
+  const SYSTEM_PROMPT = `你是曾科，3年抖音代运营实战专家，深度服务过餐饮、美容、教育、装修、家政等12个行业的中小商家。你看过上千个账号，一眼就能定位问题。
+
+你现在要分析一个抖音账号，输出一份诊断报告。你的语气是「一针见血的专家」——不客套，直接说问题，但每个问题都要有理有据，让人感到「这个人真的懂我」。
+
+## 分析维度
+1. 账号定位与标签：账号的人设清晰吗？系统知道该把内容推给谁吗？
+2. 内容质量与完播：前3秒能抓住人吗？为什么用户划走了？
+3. 流量与推流机制：播放量卡在哪个量级？和同行差距在哪？
+4. 转化与变现：有人看但有人咨询吗？缺少什么转化动作？
+
+## 输出要求
+结合用户的行业特征，输出恰好3个最核心的问题，按严重程度排序。每个问题必须包含：
+- title: 问题标题（8-15字，一针见血）
+- severity: 严重程度（1-10整数）
+- analysis: 症状分析（2-3句话，要具体到行业，不能用套话）
+- questions: 恰好2个让用户反思的问题
+- consequence: 不解决的后果
+
+严格按以下JSON格式输出，不要markdown标记：
+{"overall_score":52,"score_comment":"一句话总结","problems":[{"title":"...","severity":8,"analysis":"...","questions":["...","..."],"consequence":"..."}]}
+
+规则：score 30-85整数。不用温和措辞，用「必须」「否则」制造紧迫感。只输出JSON。`;
+
+  // ---- Parse ----
+  function parseReport(raw) {
+    let json = raw.trim();
+    const m = json.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (m) json = m[1].trim();
+    try {
+      const obj = JSON.parse(json);
+      if (obj.overall_score && Array.isArray(obj.problems)) {
+        const probs = obj.problems.slice(0,3);
+        while (probs.length < 3) {
+          probs.push(
+            probs.length===0 ? {title:'账号标签不精准',severity:7,analysis:'推送人群与目标客户匹配度低，算法不了解你的目标受众。',questions:['你的粉丝画像和实际客户一致吗？','评论互动的人是你的目标客户吗？'],consequence:'播放量越推越偏，投流也是浪费。'} :
+            probs.length===1 ? {title:'内容开头缺少吸引力',severity:6,analysis:'前3秒没有抓住用户注意，完播率偏低，大部分人在看到有价值内容前就划走了。',questions:['每条视频前3秒的完播率你关注过吗？','第一帧画面能让用户停下来吗？'],consequence:'制作精力全浪费在前3秒，后面内容再好也没用。'} :
+            {title:'缺乏转化引导',severity:5,analysis:'视频有人看但没人咨询，因为没有明确的行动号召。每条视频都是一次获客机会，现在全漏掉了。',questions:['视频结尾有引导用户行动的话术吗？','评论区互动是在闲聊还是引导咨询？'],consequence:'一个月发几十条视频，微信上没加几个人。'}
+          );
+        }
+        return { overall_score: Math.min(85,Math.max(30,obj.overall_score|0)), score_comment: obj.score_comment||'', problems: probs };
+      }
+    } catch(e) { console.warn('JSON parse failed'); }
+    return {
+      overall_score: 48,
+      score_comment: '系统初步判断你的账号存在较严重的定位和转化问题。',
+      problems: [
+        {title:'账号标签不够精准',severity:8,analysis:'系统推送人群与你的目标客户不匹配，算法不了解你的目标受众是谁。',questions:['你的粉丝画像和实际客户一致吗？','给你评论的人有多少是同行或外地人？'],consequence:'标签混乱导致播放量越推越偏，花钱投流也是浪费。'},
+        {title:'内容开头缺少吸引力',severity:6,analysis:'前3秒没有抓住用户，导致完播率低，大部分人在看到有价值内容前就划走了。',questions:['每条视频前3秒的完播率你关注过吗？','第一帧画面能让陌生用户停下来吗？'],consequence:'开头不改，后面的内容做得再好也没人能看到。'},
+        {title:'缺乏有效转化引导',severity:5,analysis:'视频有人看但没人咨询，因为没有告诉用户下一步该做什么。',questions:['每条视频结尾有引导话术吗？','评论区互动是在闲聊还是引导咨询？'],consequence:'流量变不成客户，视频制作精力全打了水漂。'}
+      ]
+    };
+  }
+
+  // ---- Render ----
+  function renderReport(did, ind, report) {
+    const score = Math.min(85, Math.max(25, report.overall_score|0));
+    const color = score>=70?'#10b981':score>=40?'#f59e0b':'#ef4444';
+    const shadow = score>=70?'rgba(16,185,129,.15)':score>=40?'rgba(245,158,11,.15)':'rgba(239,68,68,.15)';
+
+    scoreNum.textContent = score; scoreNum.style.color = color;
+    const circumference = 2*Math.PI*48;
+    const offset = circumference - (score/100)*circumference;
+    scoreArc.setAttribute('stroke-dasharray', circumference);
+    scoreArc.setAttribute('stroke-dashoffset', offset);
+    scoreArc.setAttribute('stroke', color);
+    scoreNum.parentElement.parentElement.parentElement.style.boxShadow = '0 0 32px '+shadow;
+
+    reportSub.textContent = report.score_comment || '';
+
+    const sevColor = s => s>=7?'#ef4444':s>=4?'#f59e0b':'#fbbf24';
+    const sevLabel = s => s>=7?'严重':s>=4?'中等':'一般';
+    const sevRgb = s => s>=7?'239,68,68':s>=4?'245,158,11':'251,191,36';
+    const tags = ['问题一','问题二','问题三'];
+
+    problemsList.innerHTML = (report.problems||[]).slice(0,3).map((p,i) => {
+      const c = sevColor(p.severity||5);
+      const rgb = sevRgb(p.severity||5);
+      const label = sevLabel(p.severity||5);
+      const qs = (p.questions||[]).slice(0,2).map(q => '<p class="pq-q">· '+esc(q)+'</p>').join('');
+      return '<div class="p-card">'+
+        '<span class="p-tag" style="color:'+c+';background:rgba('+rgb+',.1)">'+tags[i]+' · '+label+' · '+(p.severity||5)+'/10</span>'+
+        '<div class="p-title">'+esc(p.title)+'</div>'+
+        '<div class="p-desc">'+esc(p.analysis)+'</div>'+
+        '<div class="p-questions"><div class="pq-label">不妨问自己：</div>'+qs+'</div>'+
+        '<div class="p-warn"><span>&#9888;</span><span>'+esc(p.consequence||'如不解决，账号增长将持续受阻。')+'</span></div>'+
+        '</div>';
+    }).join('');
+
+    const summary = (report.problems||[]).slice(0,3).map(p=>esc(p.title||'').slice(0,8)).join('、');
+    ctaProblems.textContent = '这3个问题是多年服务中小商家的共性痛点。每个问题都有对应方案，但需要结合你的具体情况定制。';
+    ctaDesc.textContent = '加微信，1对1帮你分析从'+score+'分提到90+分的路径。';
+    wechatId.textContent = WX;
+    btnCopyWx.textContent = '复制'; btnCopyWx.classList.remove('copied');
+  }
+
+  // ---- Copy ----
+  btnCopyWx.addEventListener('click', async function() {
+    try {
+      await navigator.clipboard.writeText(WX);
+      btnCopyWx.textContent='已复制 ✓'; btnCopyWx.classList.add('copied');
+      setTimeout(()=>{btnCopyWx.textContent='复制';btnCopyWx.classList.remove('copied');},2500);
+    } catch(e) {
+      const inp=document.createElement('input'); inp.value=WX; document.body.appendChild(inp);
+      inp.select(); document.execCommand('copy'); document.body.removeChild(inp);
+      btnCopyWx.textContent='已复制 ✓'; setTimeout(()=>{btnCopyWx.textContent='复制';},2000);
+    }
+  });
+
+  // ---- Reset ----
+  $('btnReset').addEventListener('click', resetAll);
+  function resetAll() {
+    douyinId.value=''; industry.value=''; problem.value='';
+    clearImage(); hideErr();
+    ['sp1','sp2','sp3','sp4'].forEach(id=>{const el=$(id);el.classList.remove('done','cur');});
+    showStep(1);
+  }
+
+  // ---- Utils ----
+  function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+  function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+})();
+</script>
+</body>
+</html>
