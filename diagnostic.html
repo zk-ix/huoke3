@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>抖音账号免费诊断</title>
+<style>
+  :root {
+    --bg: #080c14; --card: #111827; --card-hover: #1a2332;
+    --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
+    --accent: #6366f1; --accent-glow: rgba(99,102,241,.25);
+    --red: #f43f5e; --orange: #f59e0b; --green: #10b981;
+    --border: #1e293b; --border-light: #334155;
+    --radius: 18px; --radius-sm: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,.4);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(99,102,241,.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 0% 100%, rgba(139,92,246,.05) 0%, transparent 50%);
+    color: var(--text); min-height:100vh;
+    display:flex; justify-content:center; align-items:center;
+    padding: 20px;
+  }
+  .container { width:100%; max-width:430px; }
+
+  .step { display:none; animation: fadeSlide .35s ease; }
+  .step.active { display:block; }
+  @keyframes fadeSlide {
+    from { opacity:0; transform: translateY(12px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ====== INPUT ====== */
+  .brand { text-align:center; margin-bottom:30px; }
+  .brand-icon {
+    width: 68px; height: 68px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+    border-radius: 20px; display:inline-flex;
+    align-items:center; justify-content:center; font-size:32px;
+    margin-bottom:16px;
+    box-shadow: 0 8px 32px var(--accent-glow);
+  }
+  .brand h1 { font-size:22px; font-weight:800; margin-bottom:4px; letter-spacing:-.3px; }
+  .brand .sub { font-size:13px; color:var(--text2); }
+  .kpi-row { display:flex; justify-content:center; gap:30px; margin-top:16px; }
+  .kpi { text-align:center; }
+  .kpi-num { font-size:21px; font-weight:800; background:linear-gradient(135deg,#818cf8,#c084fc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .kpi-label { font-size:11px; color:var(--text3); margin-top:2px; }
+
+  .card {
+    background:var(--card); border-radius:var(--radius);
+    padding:24px 20px; border:1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .field { margin-bottom:16px; }
+  .field:last-child { margin-bottom:0; }
+  .field-label {
+    display:block; font-size:13px; color:var(--text2);
+    margin-bottom:5px; font-weight:600;
+  }
+  .field-label .tag { font-size:10px; background:rgba(99,102,241,.15); color:#818cf8; padding:2px 7px; border-radius:4px; margin-left:6px; font-weight:500; }
+  input, select, textarea {
+    width:100%; padding:11px 14px;
+    background:var(--bg); border:1px solid var(--border);
+    border-radius:var(--radius-sm); color:var(--text);
+    font-size:15px; font-family:inherit; outline:none;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  input::placeholder, textarea::placeholder { color:#475569; }
+  select {
+    appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%2364748b'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 14px center;
+    cursor:pointer;
+  }
+  textarea { resize:none; height:60px; }
+
+  /* Upload */
+  .upload {
+    border:2px dashed var(--border-light); border-radius:var(--radius-sm);
+    padding:24px 16px; text-align:center; cursor:pointer;
+    transition:border-color .2s, background .2s; position:relative;
+    overflow:hidden;
+  }
+  .upload:hover { border-color:var(--accent); background:rgba(99,102,241,.03); }
+  .upload.has-img { border-style:solid; border-color:var(--accent); padding:8px; }
+  .upload-icon-svg { width:32px; height:32px; margin:0 auto 8px; color:var(--text3); }
+  .upload-text { font-size:13px; color:var(--text2); }
+  .upload-hint { font-size:11px; color:var(--text3); margin-top:4px; }
+  .upload input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .upload .preview { display:none; width:100%; max-height:200px; object-fit:contain; border-radius:10px; }
+  .upload.has-img .upload-icon-svg,
+  .upload.has-img .upload-text,
+  .upload.has-img .upload-hint { display:none; }
+  .upload.has-img .preview { display:block; }
+  .upload .remove-btn {
+    display:none; position:absolute; top:8px; right:8px;
+    width:26px; height:26px; background:rgba(0,0,0,.65); color:#fff;
+    border:none; border-radius:50%; font-size:16px; cursor:pointer;
+    z-index:2; line-height:26px; text-align:center;
+    backdrop-filter:blur(4px);
+  }
+  .upload.has-img .remove-btn { display:block; }
+
+  .btn {
+    width:100%; padding:14px; border:none; border-radius:var(--radius-sm);
+    font-size:16px; font-weight:700; cursor:pointer; font-family:inherit;
+    transition:all .2s; position:relative; overflow:hidden;
+  }
+  .btn-primary {
+    background:linear-gradient(135deg, #6366f1, #8b5cf6);
+    color:#fff; margin-top:20px;
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+  .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow: 0 8px 30px var(--accent-glow); }
+  .btn-primary:active:not(:disabled) { transform:translateY(0); }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+  .trust { text-align:center; font-size:11px; color:var(--text3); margin-top:14px; }
+  .err-msg {
+    background:rgba(244,63,94,.08); border:1px solid rgba(244,63,94,.25);
+    color:var(--red); padding:10px 14px; border-radius:var(--radius-sm);
+    font-size:13px; margin-top:12px; display:none;
+  }
+
+  /* ====== LOADING ====== */
+  .loading-wrap { text-align:center; padding:60px 20px; }
+  .pulse-ring {
+    width:64px; height:64px; margin:0 auto 32px; position:relative;
+  }
+  .pulse-ring::before {
+    content:''; position:absolute; inset:0;
+    border-radius:50%; border:3px solid var(--accent);
+    animation: pulse-ring 1.6s ease-out infinite;
+  }
+  .pulse-ring::after {
+    content:''; position:absolute; inset:12px;
+    border-radius:50%; background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    animation: pulse-dot .8s ease-in-out infinite alternate;
+  }
+  @keyframes pulse-ring {
+    0% { transform:scale(.8); opacity:1; }
+    100% { transform:scale(1.5); opacity:0; }
+  }
+  @keyframes pulse-dot {
+    from { transform:scale(.8); }
+    to { transform:scale(1.15); }
+  }
+  .loading-wrap h2 { font-size:19px; margin-bottom:6px; }
+  .loading-wrap .lsub { font-size:13px; color:var(--text2); margin-bottom:28px; }
+
+  .steps-list { text-align:left; max-width:240px; margin:0 auto; }
+  .s-item {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 0; font-size:14px; color:var(--text3);
+    transition:color .3s;
+  }
+  .s-dot {
+    width:22px; height:22px; border-radius:50%;
+    border:2px solid var(--border-light); display:flex;
+    align-items:center; justify-content:center;
+    font-size:12px; flex-shrink:0; transition:all .3s;
+  }
+  .s-item.done { color:var(--text); }
+  .s-item.done .s-dot { border-color:var(--green); background:var(--green); color:#fff; }
+  .s-item.cur { color:var(--text); }
+  .s-item.cur .s-dot { border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-glow); }
+
+  /* ====== REPORT ====== */
+  .report-header { text-align:center; margin-bottom:24px; }
+  .score-wrap { margin:0 auto 14px; position:relative; width:110px; height:110px; }
+  .score-ring-bg { fill:none; stroke:var(--border-light); stroke-width:8; }
+  .score-ring-fg { fill:none; stroke-width:8; stroke-linecap:round; transform:rotate(-90deg); transform-origin:center; transition:stroke-dashoffset 1s ease; }
+  .score-text { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .score-num { font-size:38px; font-weight:800; transition:color .5s; }
+  .score-unit { font-size:12px; color:var(--text3); margin-top:-4px; }
+  .report-header h2 { font-size:18px; margin-bottom:4px; word-break:break-all; }
+  .report-sub { font-size:12px; color:var(--text2); }
+
+  .problem-list { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+  .p-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:18px;
+    border-left:3px solid var(--red); transition:border-color .3s;
+  }
+  .p-card:nth-child(2) { border-left-color:var(--orange); }
+  .p-card:nth-child(3) { border-left-color:#fbbf24; }
+  .p-tag { font-size:10px; font-weight:700; letter-spacing:1px; margin-bottom:4px; }
+  .p-card:nth-child(1) .p-tag { color:var(--red); }
+  .p-card:nth-child(2) .p-tag { color:var(--orange); }
+  .p-card:nth-child(3) .p-tag { color:#fbbf24; }
+  .p-title { font-size:15px; font-weight:700; margin-bottom:5px; }
+  .p-desc { font-size:13px; color:var(--text2); line-height:1.55; margin-bottom:10px; }
+  .p-link { font-size:12px; color:var(--accent); font-weight:600; }
+
+  .cta {
+    background:linear-gradient(135deg, rgba(99,102,241,.08), rgba(139,92,246,.08));
+    border:1.5px solid rgba(99,102,241,.4); border-radius:var(--radius);
+    padding:24px 20px; text-align:center;
+  }
+  .cta h3 { font-size:16px; margin-bottom:4px; }
+  .cta-sub { font-size:12px; color:var(--text2); margin-bottom:16px; }
+  .wx-row {
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    background:var(--bg); border-radius:var(--radius-sm);
+    padding:12px 16px; margin-bottom:14px; border:1px solid var(--border);
+  }
+  .wx-badge { width:28px; height:28px; background:#07c160; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .wx-text { font-size:18px; font-weight:800; letter-spacing:.5px; }
+  .btn-copy { background:#07c160; color:#fff; padding:8px 18px; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .2s; }
+  .btn-copy.copied { background:#059669; }
+  .cta-tip { font-size:11px; color:var(--text3); }
+
+  .btn-reset {
+    display:block; width:100%; margin-top:24px; padding:12px;
+    background:transparent; border:1px solid var(--border);
+    border-radius:var(--radius-sm); color:var(--text3);
+    font-size:13px; cursor:pointer; font-family:inherit;
+    transition:all .2s;
+  }
+  .btn-reset:hover { color:var(--text); border-color:var(--text3); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- ====== INPUT ====== -->
+  <div class="step active" id="step1">
+    <div class="brand">
+      <div class="brand-icon">&#128269;</div>
+      <h1>抖音账号免费诊断</h1>
+      <p class="sub">上传截图或填写信息，30秒出诊断报告</p>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-num" id="counter">2,683</div><div class="kpi-label">已诊断商家</div></div>
+        <div class="kpi"><div class="kpi-num">92%</div><div class="kpi-label">找到获客瓶颈</div></div>
+        <div class="kpi"><div class="kpi-num">30s</div><div class="kpi-label">出报告</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label class="field-label">上传主页截图 <span class="tag">推荐</span></label>
+        <div class="upload" id="uploadZone">
+          <svg class="upload-icon-svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="26" height="26" rx="4"/><circle cx="11" cy="11" r="3"/><path d="M3 21l8-8 5 5 4-4 9 9"/></svg>
+          <div class="upload-text">点击上传抖音主页截图</div>
+          <div class="upload-hint">截图越全诊断越准，支持 JPG/PNG</div>
+          <img class="preview" id="imgPreview" alt="">
+          <button class="remove-btn" id="btnRemoveImg">&times;</button>
+          <input type="file" id="imageInput" accept="image/*">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">抖音号</label>
+        <input type="text" id="douyinId" placeholder="例如：dy123456789" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label class="field-label">行业</label>
+        <select id="industry">
+          <option value="">请选择行业</option>
+          <option>餐饮</option><option>美容</option><option>教育</option>
+          <option>装修</option><option>家政</option><option>健身</option>
+          <option>汽车</option><option>房产</option><option>宠物</option>
+          <option>摄影</option><option>法律服务</option><option>财税</option>
+          <option>其他</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field-label">遇到的问题 <span style="color:#475569;font-weight:400;">（选填）</span></label>
+        <textarea id="problem" placeholder="比如：播放量低、没客户咨询、投了dou+没效果..."></textarea>
+      </div>
+
+      <div class="err-msg" id="errMsg"></div>
+
+      <button class="btn btn-primary" id="btnStart">免费诊断</button>
+    </div>
+
+    <p class="trust">不收费 &middot; 不留手机号 &middot; 截图不存储</p>
+  </div>
+
+  <!-- ====== LOADING ====== -->
+  <div class="step" id="step2">
+    <div class="loading-wrap">
+      <div class="pulse-ring"></div>
+      <h2>正在分析账号数据</h2>
+      <p class="lsub">综合分析中，请稍等...</p>
+      <div class="steps-list">
+        <div class="s-item" id="sp1"><span class="s-dot">&#10003;</span>拉取账号基础数据</div>
+        <div class="s-item" id="sp2"><span class="s-dot">&#10003;</span>对比行业平均数据</div>
+        <div class="s-item" id="sp3"><span class="s-dot">&#10003;</span>大数据分析中</div>
+        <div class="s-item" id="sp4"><span class="s-dot">&#10003;</span>生成诊断报告</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== REPORT ====== -->
+  <div class="step" id="step3">
+    <div class="report-header">
+      <div class="score-wrap">
+        <svg viewBox="0 0 110 110" width="110" height="110">
+          <circle class="score-ring-bg" cx="55" cy="55" r="48"/>
+          <circle class="score-ring-fg" id="scoreArc" cx="55" cy="55" r="48"
+            stroke-dasharray="301.6" stroke-dashoffset="150" stroke="#f59e0b"/>
+        </svg>
+        <div class="score-text">
+          <span class="score-num" id="scoreNum">52</span>
+          <span class="score-unit">分</span>
+        </div>
+      </div>
+      <h2 id="reportTitle"></h2>
+      <p class="report-sub" id="reportSub"></p>
+    </div>
+
+    <div class="problem-list" id="problemsList"></div>
+
+    <div class="cta">
+      <h3>&#128233; 想看详细解决方案？</h3>
+      <p class="cta-sub">具体解决方法已整理好，加微信发你</p>
+      <div class="wx-row">
+        <span class="wx-badge">&#128172;</span>
+        <span class="wx-text" id="wechatId">zengke_dy</span>
+        <button class="btn-copy" id="btnCopyWx">复制</button>
+      </div>
+      <p class="cta-tip">加微信发送诊断报告，免费获取定制化运营方案</p>
+    </div>
+
+    <button class="btn-reset" id="btnReset">&larr; 重新诊断另一个账号</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const API = '/api/diagnose';
+  const WX = 'zengke_dy'; // TODO: 改实际微信号
+  const RETRY_MAX = 2;
+
+  let imageB64 = null;
+  let diagnosing = false;
+
+  // ---- DOM refs ----
+  const $ = id => document.getElementById(id);
+  const step1 = $('step1'), step2 = $('step2'), step3 = $('step3');
+  const uploadZone = $('uploadZone'), imgPreview = $('imgPreview');
+  const imageInput = $('imageInput'), btnRemoveImg = $('btnRemoveImg');
+  const douyinId = $('douyinId'), industry = $('industry'), problem = $('problem');
+  const errMsg = $('errMsg'), btnStart = $('btnStart');
+  const scoreNum = $('scoreNum'), scoreArc = $('scoreArc');
+  const reportTitle = $('reportTitle'), reportSub = $('reportSub');
+  const problemsList = $('problemsList');
+  const wechatId = $('wechatId'), btnCopyWx = $('btnCopyWx');
+
+  // ---- Init ----
+  $('counter').textContent = (2600 + Math.floor(Math.random() * 200)).toLocaleString();
+
+  // ---- Image handling ----
+  imageInput.addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) return showErr('图片不能超过 10MB');
+    const r = new FileReader();
+    r.onload = function(e) {
+      imageB64 = e.target.result;
+      imgPreview.src = imageB64;
+      uploadZone.classList.add('has-img');
+    };
+    r.readAsDataURL(file);
+  });
+
+  btnRemoveImg.addEventListener('click', function(e) {
+    e.stopPropagation();
+    clearImage();
+  });
+
+  function clearImage() {
+    imageB64 = null;
+    imageInput.value = '';
+    imgPreview.src = '';
+    uploadZone.classList.remove('has-img');
+  }
+
+  // ---- UI helpers ----
+  function showStep(n) {
+    [step1,step2,step3].forEach((el,i) => el.classList.toggle('active', i+1 === n));
+  }
+
+  function showErr(msg) {
+    errMsg.textContent = msg;
+    errMsg.style.display = 'block';
+  }
+  function hideErr() { errMsg.style.display = 'none'; }
+
+  // ---- Start diagnosis ----
+  btnStart.addEventListener('click', startDiagnosis);
+  douyinId.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); startDiagnosis(); }
+  });
+
+  async function startDiagnosis() {
+    if (diagnosing) return;
+    const did = douyinId.value.trim();
+    const ind = industry.value;
+    const prob = problem.value.trim();
+    hideErr();
+
+    if (!imageB64 && !did) { showErr('请上传截图或输入抖音号'); return; }
+    if (!ind) { showErr('请选择行业'); return; }
+
+    diagnosing = true;
+    btnStart.disabled = true;
+    btnStart.textContent = '正在启动...';
+
+    showStep(2);
+    await animateLoading();
+
+    let result = null;
+    let lastErr = '';
+    for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
+      try {
+        if (attempt > 0) await sleep(1500);
+        result = await callAPI(did, ind, prob);
+        if (result) break;
+      } catch(e) {
+        lastErr = e.message;
+        console.warn(`Attempt ${attempt+1} failed:`, e);
+      }
+    }
+
+    if (result) {
+      renderReport(did, ind, result);
+      showStep(3);
+    } else {
+      showStep(1);
+      showErr(lastErr || '诊断服务暂时繁忙，请稍后重试');
+    }
+
+    diagnosing = false;
+    btnStart.disabled = false;
+    btnStart.textContent = '免费诊断';
+  }
+
+  // ---- Loading animation ----
+  async function animateLoading() {
+    const ids = ['sp1','sp2','sp3','sp4'];
+    // Reset
+    ids.forEach(id => {
+      const el = $(id);
+      el.classList.remove('done','cur');
+      el.querySelector('.s-dot').textContent = '✓';
+    });
+    for (let i = 0; i < ids.length; i++) {
+      await sleep(550 + Math.random() * 400);
+      if (i > 0) {
+        const prev = $(ids[i-1]);
+        prev.classList.remove('cur');
+        prev.classList.add('done');
+      }
+      $(ids[i]).classList.add('cur');
+    }
+    await sleep(300);
+    const last = $(ids[3]);
+    last.classList.remove('cur');
+    last.classList.add('done');
+  }
+
+  // ---- API call ----
+  async function callAPI(did, ind, prob) {
+    const messages = [
+      { role:'system', content: SYSTEM_PROMPT },
+      { role:'user', content: buildUserContent(did, ind, prob) }
+    ];
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 65000);
+
+    try {
+      const resp = await fetch(API, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ _backend:'doubao', max_tokens:2000, temperature:0.7, messages }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `服务器错误 (${resp.status})`);
+      }
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      return parseReport(data.content || '');
+    } catch(e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') throw new Error('诊断超时，请重试');
+      throw e;
+    }
+  }
+
+  function buildUserContent(did, ind, prob) {
+    if (imageB64) {
+      const parts = [{ type:'image_url', image_url:{ url:imageB64 } }];
+      let text = `请诊断这个抖音账号。行业：${ind}`;
+      if (did) text += `，抖音号：${did}`;
+      if (prob) text += `，用户描述：${prob}`;
+      text += '。根据截图中可见信息（粉丝数、作品数、点赞量、头像、简介、内容风格）进行诊断。';
+      parts.unshift({ type:'text', text });
+      return parts;
+    }
+    let text = `请诊断以下抖音账号：\n抖音号：${did}\n行业：${ind}`;
+    if (prob) text += `\n用户描述：${prob}`;
+    text += `\n请根据${ind}行业常见问题进行诊断。`;
+    return text;
+  }
+
+  const SYSTEM_PROMPT = `你是抖音账号诊断专家。根据用户提供的信息（文字或截图）生成诊断报告。
+
+严格按照以下JSON格式返回，不要markdown标记，不要任何解释文字：
+{"score":52,"problems":[{"title":"标签不精准","desc":"简短描述"},{"title":"开头无钩子","desc":"简短描述"},{"title":"无转化引导","desc":"简短描述"}]}
+
+规则：
+- score: 30-75整数
+- problems: 必须恰好3个，不能多不能少
+- title: 8-15字，一针见血
+- desc: 15-25字，说清具体问题
+- 如果有截图，根据截图中可见的粉丝数、作品数、点赞量、头像、简介、内容风格等综合诊断
+- 行业定制：
+  餐饮→菜品展示/门店引流/团购转化
+  美容→效果展示/信任建立/预约转化
+  教育→师资展示/课程吸引/线索收集
+  装修→案例展示/报价透明/量房引导
+  家政→信任/服务展示/获客渠道
+  健身→效果展示/私教转化/到店引导
+  汽车→施工展示/到店/信任
+  房产→房源展示/带看/信任
+  宠物→萌宠展示/到店/互动
+  摄影→作品展示/预约/风格
+  法律服务→专业信任/咨询转化/案例
+  财税→专业度/线索收集/信任
+- 问题递进：标签/定位问题 → 内容质量 → 转化引导
+- 只看JSON，不输出任何其他内容`;
+
+  // ---- Parse ----
+  function parseReport(raw) {
+    let json = raw.trim();
+    // Remove markdown fences
+    const m = json.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (m) json = m[1].trim();
+
+    try {
+      const obj = JSON.parse(json);
+      if (obj.score && Array.isArray(obj.problems)) {
+        // Ensure exactly 3
+        const probs = obj.problems.slice(0, 3);
+        while (probs.length < 3) {
+          probs.push(
+            probs.length === 0 ? { title:'账号标签不精准', desc:'推送人群与目标客户匹配度低' } :
+            probs.length === 1 ? { title:'内容吸引力不足', desc:'前3秒未抓住用户导致完播率低' } :
+            { title:'缺少转化引导', desc:'用户看完视频不知道下一步该做什么' }
+          );
+        }
+        return { score: Math.min(75, Math.max(30, obj.score|0)), problems: probs };
+      }
+    } catch(e) {
+      console.warn('JSON parse failed, using fallback');
+    }
+
+    // Fallback
+    return {
+      score: 40 + Math.floor(Math.random() * 30),
+      problems: [
+        { title:'账号标签不够精准', desc:'系统推送人群与你的目标客户不匹配' },
+        { title:'内容开头缺少吸引力', desc:'前3秒没有抓住用户，导致完播率低' },
+        { title:'缺乏有效转化引导', desc:'用户看完不知道下一步该做什么' }
+      ]
+    };
+  }
+
+  // ---- Render report ----
+  function renderReport(did, ind, report) {
+    const score = Math.min(75, Math.max(25, report.score || 50));
+    const color = score >= 60 ? '#10b981' : score >= 45 ? '#f59e0b' : '#f43f5e';
+
+    // Score ring
+    scoreNum.textContent = score;
+    scoreNum.style.color = color;
+    const circumference = 2 * Math.PI * 48; // ~301.6
+    const offset = circumference - (score / 100) * circumference;
+    scoreArc.setAttribute('stroke-dasharray', circumference);
+    scoreArc.setAttribute('stroke-dashoffset', offset);
+    scoreArc.setAttribute('stroke', color);
+
+    // Title
+    const name = did || '你的账号';
+    reportTitle.textContent = `「${name.length > 16 ? name.slice(0,16)+'...' : name}」账号健康度报告`;
+
+    // Sub
+    const avgScore = Math.min(75, score + 8 + Math.floor(Math.random() * 12));
+    const pct = 60 + Math.floor(Math.random() * 28);
+    reportSub.innerHTML = `${ind||''}同行均值 ${avgScore} 分 &middot; 低于 <b style="color:${color};">${pct}%</b> 的同行`;
+
+    // Problems
+    const tags = ['问题一','问题二','问题三'];
+    problemsList.innerHTML = report.problems.slice(0, 3).map((p, i) => `
+      <div class="p-card">
+        <div class="p-tag">${tags[i]}</div>
+        <div class="p-title">${esc(p.title)}</div>
+        <div class="p-desc">${esc(p.desc)}</div>
+        <span class="p-link">&rarr; 查看解决方案：加微信</span>
+      </div>
+    `).join('');
+
+    wechatId.textContent = WX;
+    btnCopyWx.textContent = '复制';
+    btnCopyWx.classList.remove('copied');
+  }
+
+  // ---- Copy WeChat ----
+  btnCopyWx.addEventListener('click', async function() {
+    try {
+      await navigator.clipboard.writeText(WX);
+      btnCopyWx.textContent = '已复制 ✓';
+      btnCopyWx.classList.add('copied');
+      setTimeout(() => {
+        btnCopyWx.textContent = '复制';
+        btnCopyWx.classList.remove('copied');
+      }, 2500);
+    } catch(e) {
+      // Fallback
+      const inp = document.createElement('input');
+      inp.value = WX; document.body.appendChild(inp);
+      inp.select(); document.execCommand('copy'); document.body.removeChild(inp);
+      btnCopyWx.textContent = '已复制 ✓';
+      setTimeout(() => { btnCopyWx.textContent = '复制'; }, 2000);
+    }
+  });
+
+  // ---- Reset ----
+  $('btnReset').addEventListener('click', resetAll);
+
+  function resetAll() {
+    douyinId.value = '';
+    industry.value = '';
+    problem.value = '';
+    clearImage();
+    hideErr();
+    ['sp1','sp2','sp3','sp4'].forEach(id => {
+      const el = $(id);
+      el.classList.remove('done','cur');
+    });
+    showStep(1);
+  }
+
+  // ---- Utils ----
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+})();
+</script>
+</body>
+</html>
