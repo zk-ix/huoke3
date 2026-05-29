@@ -97,7 +97,11 @@ SYSTEM_PROMPT = """你是曾科，3年抖音代运营实战专家，深度服务
 - 不要用「建议」「您可以」「值得关注」这类温和措辞，用「必须」「否则」「继续这样下去」这类有紧迫感的措辞
 - 只输出JSON，不输出任何其他内容"""
 
-WECHAT_ID = "zengke_dy"
+SALES_WX = ["Lhx122903", "z18320567819", "z5772580", "ML04622"]
+import random
+if "wx_pick" not in st.session_state:
+    st.session_state.wx_pick = random.choice(SALES_WX)
+WECHAT_ID = st.session_state.wx_pick
 
 
 # ===== 亮色主题 CSS =====
@@ -324,7 +328,7 @@ st.markdown(
 )
 st.markdown(
     '<h1 style="text-align:center;font-size:22px;color:#0f172a;margin-bottom:4px;font-weight:800">抖音账号免费诊断</h1>'
-    '<p style="text-align:center;font-size:14px;color:#64748b;margin-bottom:24px">AI深度分析 + 3年运营经验，30秒定位核心问题</p>',
+    '<p style="text-align:center;font-size:14px;color:#64748b;margin-bottom:24px">上百商家实战验证，30秒定位账号核心问题</p>',
     unsafe_allow_html=True,
 )
 
@@ -390,7 +394,7 @@ elif st.session_state.step == "analyzing":
         f'<p style="color:#1e293b;font-weight:700;font-size:16px;margin-bottom:6px">'
         f'{"正在分析截图 + 多维度诊断..." if has_image else "正在多维度分析你的账号..."}</p>'
         f'<p style="color:#64748b;font-size:13px">'
-        f'{"AI视觉识别 + 行业数据比对中，约15-25秒" if has_image else "AI正在比对行业数据，大约需要10-20秒"}</p>'
+        f'{"视觉识别 + 行业数据比对中，约15-25秒" if has_image else "正在比对行业数据，大约需要10-20秒"}</p>'
         f'</div>'
         '<style>@keyframes spin{to{transform:rotate(360deg)}}</style>',
         unsafe_allow_html=True,
