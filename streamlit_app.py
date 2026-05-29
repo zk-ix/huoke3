@@ -100,33 +100,72 @@ SYSTEM_PROMPT = """你是曾科，3年抖音代运营实战专家，深度服务
 WECHAT_ID = "zengke_dy"
 
 
-# ===== 隐藏 Streamlit 默认样式 =====
-hide_st_style = """
+# ===== 亮色主题 CSS =====
+st.markdown("""
 <style>
+  /* 隐藏Streamlit默认元素 */
   header[data-testid="stHeader"] {display: none;}
   .stAppToolbar {display: none;}
   footer {visibility: hidden;}
   #MainMenu {visibility: hidden;}
   section[data-testid="stSidebar"] {display: none;}
-  .stApp {background: #080c14;}
-  .stButton>button {
-    width: 100%; padding: 14px; border-radius: 12px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white; border: none; font-size: 16px; font-weight: 700;
-    cursor: pointer; transition: all .2s;
+
+  /* 全局背景 */
+  .stApp {background: #f8fafc;}
+
+  /* 标题样式覆盖 */
+  h1, h2, h3, h4 {color: #1e293b !important;}
+  p, span, div {color: #334155;}
+  label {color: #475569 !important; font-weight: 600 !important; font-size: 14px !important;}
+
+  /* 输入框 */
+  .stTextInput>div>div>input, .stTextArea>div>div>textarea, .stSelectbox>div>div {
+    background: #ffffff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    color: #1e293b !important;
+    font-size: 15px !important;
+    padding: 10px 14px !important;
   }
-  .stButton>button:hover {transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,.35);}
-  .stFileUploader>section>button {display:none;}
+  .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.1) !important;
+  }
+  .stTextInput>div>div>input::placeholder, .stTextArea>div>div>textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  /* 文件上传 */
+  .stFileUploader>section {
+    border: 2px dashed #cbd5e1 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    padding: 16px !important;
+  }
+  .stFileUploader>section:hover {border-color: #6366f1 !important; background: #f1f5f9 !important;}
+
+  /* 按钮 */
+  .stButton>button {
+    width: 100% !important; padding: 14px !important; border-radius: 12px !important;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    color: #ffffff !important; border: none !important; font-size: 16px !important;
+    font-weight: 700 !important; cursor: pointer !important; transition: all .2s !important;
+    box-shadow: 0 4px 16px rgba(99,102,241,.25) !important;
+  }
+  .stButton>button:hover {transform: translateY(-1px) !important; box-shadow: 0 8px 24px rgba(99,102,241,.35) !important;}
+
+  /* 表单 */
+  .stForm {border: none !important; padding: 0 !important;}
+
+  /* selectbox下拉箭头 */
+  .stSelectbox svg {color: #6366f1 !important;}
 </style>
-"""
-st.markdown(hide_st_style, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 
 def encode_image(uploaded_file) -> str | None:
-    """将上传的图片编码为 base64 data URL"""
     try:
         img = Image.open(uploaded_file)
-        # 压缩大图到 1024px 宽以内
         if img.width > 1024:
             ratio = 1024 / img.width
             img = img.resize((1024, int(img.height * ratio)), Image.LANCZOS)
@@ -139,9 +178,7 @@ def encode_image(uploaded_file) -> str | None:
 
 
 def build_messages(account_info: str, image_b64: str | None, use_vision: bool = True) -> list[dict]:
-    """构建 API 请求的 messages"""
     if image_b64 and use_vision:
-        # 豆包 vision 格式（OpenAI 兼容）
         user_content = [
             {"type": "image_url", "image_url": {"url": image_b64}},
             {"type": "text", "text": f"请诊断这个抖音账号。{account_info}\n\n根据截图中可见的信息（粉丝数、作品数、点赞量、头像、昵称、简介、内容风格、主页排版等）进行综合诊断。"},
@@ -158,7 +195,6 @@ def build_messages(account_info: str, image_b64: str | None, use_vision: bool = 
 
 
 def call_doubao(account_info: str, image_b64: str | None) -> dict | None:
-    """调用豆包 API（支持图片）"""
     try:
         messages = build_messages(account_info, image_b64, use_vision=True)
         resp = requests.post(
@@ -181,7 +217,6 @@ def call_doubao(account_info: str, image_b64: str | None) -> dict | None:
 
 
 def call_deepseek(account_info: str) -> dict | None:
-    """调用 DeepSeek API（回退方案，纯文本）"""
     try:
         resp = requests.post(
             DEEPSEEK_URL,
@@ -206,15 +241,12 @@ def call_deepseek(account_info: str) -> dict | None:
 
 
 def parse_json(raw: str) -> dict | None:
-    """从 AI 回复中提取 JSON"""
-    # 尝试匹配 JSON 块
     m = re.search(r"\{[\s\S]*\"overall_score\"[\s\S]*\}", raw)
     if m:
         try:
             return json.loads(m.group())
         except json.JSONDecodeError:
             pass
-    # 兜底：尝试解析整个内容
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
@@ -222,15 +254,12 @@ def parse_json(raw: str) -> dict | None:
 
 
 def diagnose(account_info: str, image_b64: str | None = None) -> dict:
-    """执行诊断，豆包优先，失败回退 DeepSeek"""
     result = call_doubao(account_info, image_b64)
     if result:
         return result
-    # DeepSeek 回退（纯文本，不带图片）
     result = call_deepseek(account_info)
     if result:
         return result
-    # 硬兜底
     return {
         "overall_score": 48,
         "score_comment": "系统初步判断你的账号存在较严重的定位和转化问题，建议尽快优化。",
@@ -261,53 +290,45 @@ def diagnose(account_info: str, image_b64: str | None = None) -> dict:
 
 
 def severity_color(s: int) -> str:
-    if s >= 7:
-        return "#f43f5e"
-    if s >= 4:
-        return "#f59e0b"
+    if s >= 7: return "#ef4444"
+    if s >= 4: return "#f59e0b"
     return "#fbbf24"
 
 
 def severity_label(s: int) -> str:
-    if s >= 7:
-        return "严重"
-    if s >= 4:
-        return "中等"
+    if s >= 7: return "严重"
+    if s >= 4: return "中等"
     return "一般"
 
 
 def score_color(score: int) -> str:
-    if score >= 70:
-        return "#10b981"
-    if score >= 40:
-        return "#f59e0b"
-    return "#f43f5e"
+    if score >= 70: return "#10b981"
+    if score >= 40: return "#f59e0b"
+    return "#ef4444"
 
 
-def score_emoji(score: int) -> str:
-    if score >= 70:
-        return "🟢"
-    if score >= 40:
-        return "🟡"
-    return "🔴"
+def score_ring_shadow(score: int) -> str:
+    if score >= 70: return "rgba(16,185,129,.15)"
+    if score >= 40: return "rgba(245,158,11,.15)"
+    return "rgba(239,68,68,.15)"
 
 
 # ===== 主界面 =====
 st.markdown(
     '<div style="text-align:center;margin-bottom:8px">'
     '<span style="display:inline-flex;align-items:center;justify-content:center;'
-    'width:60px;height:60px;background:linear-gradient(135deg,#6366f1,#8b5cf6);'
-    'border-radius:18px;font-size:28px;box-shadow:0 6px 24px rgba(99,102,241,.3)">🔍</span>'
-    "</div>",
+    'width:56px;height:56px;background:linear-gradient(135deg,#6366f1,#8b5cf6);'
+    'border-radius:16px;font-size:26px;box-shadow:0 4px 16px rgba(99,102,241,.25)">🔍</span>'
+    '</div>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<h1 style="text-align:center;font-size:20px;color:#e2e8f0;margin-bottom:4px">抖音账号免费诊断</h1>'
-    '<p style="text-align:center;font-size:13px;color:#64748b">AI深度分析 + 3年运营经验，30秒定位核心问题</p>',
+    '<h1 style="text-align:center;font-size:22px;color:#0f172a;margin-bottom:4px;font-weight:800">抖音账号免费诊断</h1>'
+    '<p style="text-align:center;font-size:14px;color:#64748b;margin-bottom:24px">AI深度分析 + 3年运营经验，30秒定位核心问题</p>',
     unsafe_allow_html=True,
 )
 
-# 初始化状态
+# 初始化
 if "step" not in st.session_state:
     st.session_state.step = "input"
 if "result" not in st.session_state:
@@ -320,7 +341,7 @@ if "image_b64" not in st.session_state:
 if st.session_state.step == "input":
     with st.form("diagnose_form", clear_on_submit=False):
         uploaded = st.file_uploader(
-            "上传抖音主页截图（推荐，诊断更精准）",
+            "📷 上传抖音主页截图（推荐，诊断更精准）",
             type=["jpg", "jpeg", "png"],
             label_visibility="visible",
         )
@@ -335,7 +356,7 @@ if st.session_state.step == "input":
             placeholder="例如：视频播放量卡在500上不去 / 有人看没人加微信 / 不知道拍什么内容好 / 投了dou+没效果",
             height=68,
         )
-        submitted = st.form_submit_button("免费诊断")
+        submitted = st.form_submit_button("⚡ 免费诊断")
 
     if submitted:
         parts = []
@@ -350,7 +371,6 @@ if st.session_state.step == "input":
         if not parts and not uploaded:
             st.warning("至少上传截图或填写一项信息")
         else:
-            # 处理图片
             if uploaded:
                 st.session_state.image_b64 = encode_image(uploaded)
             else:
@@ -363,18 +383,18 @@ if st.session_state.step == "input":
 elif st.session_state.step == "analyzing":
     has_image = st.session_state.image_b64 is not None
     st.markdown(
-        f'<div style="background:#111827;border-radius:18px;padding:40px 24px;text-align:center;border:1px solid #1e293b">'
-        f'<div style="width:72px;height:72px;margin:0 auto 24px;border:3px solid #1e293b;'
+        f'<div style="background:#ffffff;border-radius:18px;padding:48px 24px;text-align:center;'
+        f'border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04)">'
+        f'<div style="width:64px;height:64px;margin:0 auto 24px;border:3px solid #e2e8f0;'
         f'border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite"></div>'
-        f'<p style="color:#e2e8f0;font-weight:700;font-size:16px;margin-bottom:6px">'
+        f'<p style="color:#1e293b;font-weight:700;font-size:16px;margin-bottom:6px">'
         f'{"正在分析截图 + 多维度诊断..." if has_image else "正在多维度分析你的账号..."}</p>'
         f'<p style="color:#64748b;font-size:13px">'
         f'{"AI视觉识别 + 行业数据比对中，约15-25秒" if has_image else "AI正在比对行业数据，大约需要10-20秒"}</p>'
-        f"</div>"
+        f'</div>'
         '<style>@keyframes spin{to{transform:rotate(360deg)}}</style>',
         unsafe_allow_html=True,
     )
-    # 执行诊断
     result = diagnose(
         st.session_state.get("account_info", ""),
         st.session_state.get("image_b64"),
@@ -391,37 +411,38 @@ elif st.session_state.step == "result":
     score_comment = result.get("score_comment", "")
     problems = result["problems"]
 
-    # -- 健康度评分 --
     color = score_color(score)
-    emoji = score_emoji(score)
+    shadow = score_ring_shadow(score)
+
+    # 分数环
     st.markdown(
-        f'<div style="text-align:center;margin-bottom:8px">'
+        f'<div style="text-align:center;margin-bottom:4px">'
         f'<div style="display:inline-flex;align-items:center;justify-content:center;'
-        f'width:110px;height:110px;border-radius:50%;border:5px solid {color};'
-        f'background:rgba(0,0,0,.3);font-size:42px;font-weight:800;color:{color};'
-        f'box-shadow:0 0 40px rgba({("16,185,129" if score>=70 else "245,158,11" if score>=40 else "244,63,94")},.15)">{score}</div>'
-        f"</div>",
+        f'width:100px;height:100px;border-radius:50%;border:4px solid {color};'
+        f'background:#ffffff;font-size:40px;font-weight:800;color:{color};'
+        f'box-shadow:0 0 32px {shadow}">{score}</div>'
+        f'</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
         f'<div style="text-align:center;margin-bottom:4px">'
-        f'<span style="font-size:18px;font-weight:700;color:#e2e8f0">{emoji} 综合健康度</span>'
-        f"</div>",
+        f'<span style="font-size:17px;font-weight:700;color:#1e293b">综合健康度</span>'
+        f'</div>',
         unsafe_allow_html=True,
     )
     if score_comment:
         st.markdown(
-            f'<p style="text-align:center;font-size:13px;color:#94a3b8;margin-bottom:24px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.6">{score_comment}</p>',
+            f'<p style="text-align:center;font-size:13px;color:#64748b;margin-bottom:24px;'
+            f'max-width:360px;margin-left:auto;margin-right:auto;line-height:1.7">{score_comment}</p>',
             unsafe_allow_html=True,
         )
 
-    # -- 分隔线 --
-    st.markdown('<div style="border-top:1px solid #1e293b;margin:0 0 20px 0"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="border-top:1px solid #e2e8f0;margin:0 0 24px 0"></div>', unsafe_allow_html=True)
 
-    # -- 核心问题 --
+    # 问题列表
     st.markdown(
-        '<p style="color:#cbd5e1;font-size:15px;font-weight:700;margin-bottom:14px">'
-        '🔴 诊断发现 <span style="color:#f59e0b">3个</span> 核心问题</p>',
+        '<p style="color:#1e293b;font-size:16px;font-weight:700;margin-bottom:14px">'
+        '发现 <span style="color:#f59e0b">3个</span> 核心问题</p>',
         unsafe_allow_html=True,
     )
 
@@ -429,59 +450,62 @@ elif st.session_state.step == "result":
         sev = p.get("severity", 5)
         c = severity_color(sev)
         label = severity_label(sev)
+        sev_rgb = "239,68,68" if sev >= 7 else "245,158,11" if sev >= 4 else "251,191,36"
 
-        # 问题卡片
         st.markdown(
-            f'<div style="background:#111827;border-radius:16px;padding:20px;'
-            f'margin-bottom:14px;border:1px solid #1e293b;border-left:4px solid {c}">'
-            # 标题行
-            f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
-            f'<div style="flex:1">'
-            f'<span style="display:inline-block;background:rgba({("244,63,94" if sev>=7 else "245,158,11" if sev>=4 else "251,191,36")},.12);'
-            f'color:{c};padding:2px 10px;border-radius:5px;font-size:11px;font-weight:700;margin-bottom:6px">问题{i+1} · {label} · {sev}/10</span>'
-            f'<span style="display:block;color:#f1f5f9;font-weight:700;font-size:16px">{p["title"]}</span>'
-            f"</div>"
-            f"</div>"
+            f'<div style="background:#ffffff;border-radius:14px;padding:20px;'
+            f'margin-bottom:12px;border:1px solid #e2e8f0;border-left:4px solid {c};'
+            f'box-shadow:0 1px 3px rgba(0,0,0,.04)">'
+            # 标签 + 标题
+            f'<div style="margin-bottom:10px">'
+            f'<span style="display:inline-block;background:rgba({sev_rgb},.1);'
+            f'color:{c};padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;margin-bottom:6px">'
+            f'问题{i+1} · {label} · {sev}/10</span>'
+            f'<span style="display:block;color:#0f172a;font-weight:700;font-size:16px">{p["title"]}</span>'
+            f'</div>'
             # 分析
-            f'<p style="color:#cbd5e1;font-size:14px;line-height:1.75;margin-bottom:14px">{p["analysis"]}</p>'
+            f'<p style="color:#475569;font-size:14px;line-height:1.8;margin-bottom:14px">{p["analysis"]}</p>'
             # 反问
-            f'<div style="background:rgba(99,102,241,.06);border-radius:10px;padding:12px 14px;margin-bottom:10px;border:1px solid rgba(99,102,241,.12)">'
-            f'<p style="font-size:11px;color:#818cf8;font-weight:600;margin-bottom:6px;letter-spacing:.5px">🤔 不妨问自己：</p>'
+            f'<div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:10px;'
+            f'border:1px solid #e2e8f0">'
+            f'<p style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;letter-spacing:.5px">'
+            f'不妨问自己：</p>'
             + "".join(
-                f'<p style="font-size:13px;color:#a5b4fc;margin:4px 0;line-height:1.6">· {q}</p>'
+                f'<p style="font-size:13px;color:#475569;margin:4px 0;line-height:1.7">· {q}</p>'
                 for q in p.get("questions", [])
             )
-            + "</div>"
+            + '</div>'
             # 后果
-            f'<div style="display:flex;align-items:flex-start;gap:6px;font-size:12px;color:#ef4444;line-height:1.6">'
+            f'<div style="display:flex;align-items:flex-start;gap:6px;font-size:12px;'
+            f'color:#ef4444;line-height:1.6;background:#fef2f2;padding:8px 10px;border-radius:8px">'
             f'<span style="flex-shrink:0">⚠</span>'
             f'<span>{p.get("consequence", "如不解决，账号增长将持续受阻。")}</span>'
-            f"</div>"
-            f"</div>",
+            f'</div>'
+            f'</div>',
             unsafe_allow_html=True,
         )
 
-    # -- CTA --
+    # CTA
     problems_summary = "、".join(p["title"][:8] for p in problems[:3])
     st.markdown(
-        f'<div style="background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.06));'
+        f'<div style="background:linear-gradient(135deg,rgba(99,102,241,.04),rgba(139,92,246,.03));'
         f'border-radius:16px;padding:24px 20px;text-align:center;margin-top:24px;'
-        f'border:1.5px solid rgba(99,102,241,.35)">'
-        f'<p style="color:#f1f5f9;font-weight:700;font-size:16px;margin-bottom:4px">📩 想解决「{problems_summary}」？</p>'
-        f'<p style="color:#94a3b8;font-size:13px;margin-bottom:6px;line-height:1.6">'
-        f'这3个问题是多年服务{score}+分账号总结的共性痛点。<br>每个问题都有对应的解决方案，但需要结合你的具体情况定制。</p>'
-        f'<p style="color:#cbd5e1;font-size:14px;margin-bottom:16px;font-weight:600">'
-        f'加微信，我帮你一对一分析，从{score}分提到90+分怎么走。</p>'
+        f'border:1.5px solid rgba(99,102,241,.25)">'
+        f'<p style="color:#1e293b;font-weight:700;font-size:16px;margin-bottom:4px">'
+        f'想解决「{problems_summary}」？</p>'
+        f'<p style="color:#64748b;font-size:13px;margin-bottom:6px;line-height:1.7">'
+        f'这3个问题是多年服务中小商家的共性痛点。<br>每个问题都有对应方案，但需要结合你的具体情况定制。</p>'
+        f'<p style="color:#475569;font-size:14px;margin-bottom:16px;font-weight:600">'
+        f'加微信，1对1帮你分析从{score}分提到90+分的路径。</p>'
         f'<span style="display:inline-block;background:#07c160;'
-        f'color:white;padding:12px 32px;border-radius:10px;font-weight:700;font-size:16px;'
-        f'letter-spacing:.5px;box-shadow:0 4px 16px rgba(7,193,96,.3)">'
+        f'color:#ffffff;padding:12px 36px;border-radius:10px;font-weight:700;font-size:16px;'
+        f'letter-spacing:.5px;box-shadow:0 4px 16px rgba(7,193,96,.25)">'
         f'💬 加微信：{WECHAT_ID}</span>'
-        f'<p style="color:#64748b;font-size:11px;margin-top:12px">不加也正常，但建议你至少把上面3个反思问题想清楚</p>'
-        f"</div>",
+        f'<p style="color:#94a3b8;font-size:11px;margin-top:12px">不加也没关系，但建议把上面3个反思问题想清楚</p>'
+        f'</div>',
         unsafe_allow_html=True,
     )
 
-    # 重新诊断
     st.markdown('<div style="margin-top:24px">', unsafe_allow_html=True)
     if st.button("🔄 重新诊断另一个账号", type="secondary"):
         st.session_state.step = "input"
